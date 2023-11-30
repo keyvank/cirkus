@@ -1,28 +1,5 @@
-class Matrix:
-    def __init__(self, n):
-        self.n = n
-        self.rows = [dict() for _ in range(n)]
 
-    def get(self, i, j):
-        return self.rows[i].get(j, 0.0)
-
-    def set(self, i, j, val):
-        if val:
-            self.rows[i][j] = val
-        else:
-            del self.rows[i][j]
-
-    def add(self, i, j, val):
-        self.set(i, j, self.get(i, j) + val)
-
-    def __str__(self):
-        out = ""
-        for i in range(len(self.rows)):
-            for j in range(len(self.rows) + 1):
-                out += str(self.get(i, j)) + "\t"
-            out += "\n"
-        return out
-
+from matrix import Matrix
 
 class Node:
     def __init__(self, index, name):
