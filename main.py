@@ -1,10 +1,39 @@
-
 from matrix import Matrix
 
+
+class Solver:
+    def __init__(self, num_funcs) -> None:
+        self.funcs = [list() for _ in range(num_funcs)]
+
+    def jacobian(self, nodes):
+        h = 1e-6
+        res = []
+        for f in range(len(self.funcs)):
+            row = []
+            for v in range(len(self.funcs)):
+                old = self.eval(f)
+                nodes[v].value += h
+                new = self.eval(f)
+                nodes[v].value -= h
+                row.append((new - old) / h)
+            res.append(row)
+        return res
+
+    def add_func(self, ind, f):
+        self.funcs[ind].append(f)
+
+    def eval(self, ind):
+        res = 0
+        for f in self.funcs[ind]:
+            res += f()
+        return res
+
+
 class Node:
-    def __init__(self, index, name):
+    def __init__(self, index, name, value=0):
         self.index = index
         self.name = name
+        self.value = value
 
 
 class Component:
@@ -22,11 +51,9 @@ class Resistor(Component):
         self.a = a
         self.b = b
 
-    def apply(self, mat: Matrix):
-        mat.add(self.a.index, self.a.index, 1 / self.ohms)
-        mat.add(self.a.index, self.b.index, -1 / self.ohms)
-        mat.add(self.b.index, self.a.index, -1 / self.ohms)
-        mat.add(self.b.index, self.b.index, 1 / self.ohms)
+    def apply(self, solver: Solver):
+        solver.add_func(self.a.index, lambda: (self.a.value - self.b.value) / self.ohms)
+        solver.add_func(self.b.index, lambda: (self.b.value - self.a.value) / self.ohms)
 
 
 class CurrentSource(Component):
@@ -36,9 +63,9 @@ class CurrentSource(Component):
         self.a = a
         self.b = b
 
-    def apply(self, mat: Matrix):
-        mat.add(self.a.index, mat.n, -self.amps)
-        mat.add(self.b.index, mat.n, self.amps)
+    def apply(self, solver: Matrix):
+        solver.add_func(self.a.index, lambda: self.amps)
+        solver.add_func(self.b.index, lambda: -self.amps)
 
 
 class Circuit:
@@ -55,10 +82,10 @@ class Circuit:
         self.components.append(comp)
 
     def solve(self):
-        mat = Matrix(len(self.nodes))
+        solver = Solver(len(self.nodes))
         for comp in self.components:
-            comp.apply(mat)
-        return mat
+            comp.apply(solver)
+        return solver
 
 
 c = Circuit()
@@ -73,4 +100,13 @@ c.new_component(Resistor(10, v2, gnd))
 c.new_component(CurrentSource(1, gnd, v1))
 c.new_component(CurrentSource(1.5, gnd, v3))
 
-print(c.solve())
+solver = c.solve()
+
+import numpy
+
+inv = solver.jacobian([v1, v2, v3, gnd])
+print(inv)
+for _ in range(100):
+    X_prime = solver.jacobian([v1, v2, v3, gnd])
+    # X = vec_sub(X, vec_mat(mat_inv(X_prime), f(X)))
+# print(solver.eval(3))
