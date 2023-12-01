@@ -20,7 +20,8 @@ class Solver:
         return res
 
     def add_func(self, ind, f):
-        self.funcs[ind].append(f)
+        if ind is not None:
+            self.funcs[ind].append(f)
 
     def eval(self, ind):
         res = 0
@@ -70,6 +71,7 @@ class CurrentSource(Component):
 
 class Circuit:
     def __init__(self):
+        self.gnd = Node(None, 'gnd')
         self.nodes = []
         self.components = []
 
@@ -92,21 +94,20 @@ c = Circuit()
 v1 = c.new_node("v1")
 v2 = c.new_node("v2")
 v3 = c.new_node("v3")
-gnd = c.new_node("gnd")
 
 c.new_component(Resistor(5, v1, v2))
 c.new_component(Resistor(7, v2, v3))
-c.new_component(Resistor(10, v2, gnd))
-c.new_component(CurrentSource(1, gnd, v1))
-c.new_component(CurrentSource(1.5, gnd, v3))
+c.new_component(Resistor(10, v2, c.gnd))
+c.new_component(CurrentSource(1, c.gnd, v1))
+c.new_component(CurrentSource(1.5, c.gnd, v3))
 
 solver = c.solve()
 
 import numpy
 
 for _ in range(10):
-    X_prime = solver.jacobian([v1, v2, v3, gnd])
-    X_prime_inv = numpy.linalg.inv(numpy.array(X_prime)[:3, :3])
+    X_prime = solver.jacobian([v1, v2, v3])
+    X_prime_inv = numpy.linalg.inv(X_prime)
     X = [v1.value, v2.value, v3.value]
     f_X = [solver.eval(0), solver.eval(1), solver.eval(2)]
     X = X - numpy.dot(X_prime_inv, f_X)
@@ -117,5 +118,3 @@ for _ in range(10):
 print(v1.value)
 print(v2.value)
 print(v3.value)
-# X = vec_sub(X, vec_mat(mat_inv(X_prime), f(X)))
-# print(solver.eval(3))
