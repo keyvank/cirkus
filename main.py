@@ -104,9 +104,18 @@ solver = c.solve()
 
 import numpy
 
-inv = solver.jacobian([v1, v2, v3, gnd])
-print(inv)
-for _ in range(100):
+for _ in range(10):
     X_prime = solver.jacobian([v1, v2, v3, gnd])
-    # X = vec_sub(X, vec_mat(mat_inv(X_prime), f(X)))
+    X_prime_inv = numpy.linalg.inv(numpy.array(X_prime)[:3, :3])
+    X = [v1.value, v2.value, v3.value]
+    f_X = [solver.eval(0), solver.eval(1), solver.eval(2)]
+    X = X - numpy.dot(X_prime_inv, f_X)
+    v1.value = X[0]
+    v2.value = X[1]
+    v3.value = X[2]
+
+print(v1.value)
+print(v2.value)
+print(v3.value)
+# X = vec_sub(X, vec_mat(mat_inv(X_prime), f(X)))
 # print(solver.eval(3))
