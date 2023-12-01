@@ -27,7 +27,12 @@ def f(x):
 
 
 def f_prime(x):
-    return [[f1_x(x[0], x[1]), f1_y(x[0], x[1])], [f2_x(x[0], x[1]), f2_y(x[0], x[1])]]
+    h = 0.01
+    a = (f1(x[0] + h, x[1]) - f1(x[0], x[1])) / h
+    b = (f1(x[0], x[1] + h) - f1(x[0], x[1])) / h
+    c = (f2(x[0] + h, x[1]) - f2(x[0], x[1])) / h
+    d = (f2(x[0], x[1] + h) - f2(x[0], x[1])) / h
+    return [[a, b], [c, d]]
 
 
 def vec_mat(m, v):
