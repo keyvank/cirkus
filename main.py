@@ -34,6 +34,7 @@ class Node:
     def __init__(self, index, name, value=0):
         self.index = index
         self.name = name
+        self.old_value = 0
         self.value = value
 
 
@@ -57,6 +58,33 @@ class Resistor(Component):
         solver.add_func(self.b.index, lambda: (self.b.value - self.a.value) / self.ohms)
 
 
+class Capacitor(Component):
+    def __init__(self, farads, a: Node, b: Node):
+        super().__init__()
+        self.farads = farads
+        self.a = a
+        self.b = b
+
+    def apply(self, solver: Solver):
+        dt = 0.01
+        solver.add_func(
+            self.a.index,
+            lambda: (
+                (self.a.value - self.b.value) - (self.a.old_value - self.b.old_value)
+            )
+            / dt
+            * self.farads,
+        )
+        solver.add_func(
+            self.b.index,
+            lambda: -(
+                (self.a.value - self.b.value) - (self.a.old_value - self.b.old_value)
+            )
+            / dt
+            * self.farads,
+        )
+
+
 class CurrentSource(Component):
     def __init__(self, amps, a: Node, b: Node):
         super().__init__()
@@ -71,12 +99,12 @@ class CurrentSource(Component):
 
 class Circuit:
     def __init__(self):
-        self.gnd = Node(None, 'gnd')
+        self.gnd = Node(None, "gnd")
         self.nodes = []
         self.components = []
 
     def new_node(self, name) -> Node:
-        n = Node(len(self.nodes), name)
+        n = Node(len(self.nodes), name, value=1)
         self.nodes.append(n)
         return n
 
@@ -93,28 +121,25 @@ class Circuit:
 c = Circuit()
 v1 = c.new_node("v1")
 v2 = c.new_node("v2")
-v3 = c.new_node("v3")
 
-c.new_component(Resistor(5, v1, v2))
-c.new_component(Resistor(7, v2, v3))
-c.new_component(Resistor(10, v2, c.gnd))
 c.new_component(CurrentSource(1, c.gnd, v1))
-c.new_component(CurrentSource(1.5, c.gnd, v3))
+c.new_component(Resistor(5, v1, v2))
+c.new_component(Capacitor(1, v2, c.gnd))
+
 
 solver = c.solve()
 
 import numpy
 
-for _ in range(10):
-    X_prime = solver.jacobian([v1, v2, v3])
-    X_prime_inv = numpy.linalg.inv(X_prime)
-    X = [v1.value, v2.value, v3.value]
-    f_X = [solver.eval(0), solver.eval(1), solver.eval(2)]
-    X = X - numpy.dot(X_prime_inv, f_X)
-    v1.value = X[0]
-    v2.value = X[1]
-    v3.value = X[2]
-
-print(v1.value)
-print(v2.value)
-print(v3.value)
+for _ in range(10000):
+    for _ in range(10):
+        X_prime = solver.jacobian([v1, v2])
+        X_prime_inv = numpy.linalg.inv(X_prime)
+        X = [v1.value, v2.value]
+        f_X = [solver.eval(0), solver.eval(1)]
+        X = X - numpy.dot(X_prime_inv, f_X)
+        v1.value = X[0]
+        v2.value = X[1]
+    print(v2.value)
+    v1.old_value = v1.value
+    v2.old_value = v2.value
