@@ -1,5 +1,6 @@
 DT = 0.1
 
+
 class Var:
     def __init__(self, index, name, value=0):
         self.index = index
@@ -186,6 +187,93 @@ class VoltageSource(Component):
         solver.add_deriv(self.i.index, self.b.index, lambda: 1)
 
 
+class Bjt(Component):
+    def __init__(
+        self, coeff_in, coeff_out, alpha, base: Var, emitter: Var, collector: Var
+    ):
+        super().__init__()
+        self.coeff_in = coeff_in
+        self.coeff_out = coeff_out
+        self.alpha = alpha
+        self.base = base
+        self.emitter = emitter
+        self.collector = collector
+
+    def apply(self, solver: Solver):
+        solver.add_func(
+            self.emitter.index,
+            lambda: (
+                math.exp((self.base.value - self.collector.value) * self.coeff_in) - 1
+            )
+            * self.coeff_out,
+        )
+        solver.add_func(
+            self.collector.index,
+            lambda: -(
+                math.exp((self.base.value - self.collector.value) * self.coeff_in) - 1
+            )
+            * self.coeff_out
+            * self.alpha,
+        )
+        solver.add_func(
+            self.base.index,
+            lambda: -(
+                math.exp((self.base.value - self.collector.value) * self.coeff_in) - 1
+            )
+            * self.coeff_out
+            * (1 - self.alpha),
+        )
+
+        solver.add_deriv(
+            self.emitter.index,
+            self.base.index,
+            lambda: math.exp((self.base.value - self.collector.value) * self.coeff_in)
+            * self.coeff_out
+            * self.coeff_in,
+        )
+        solver.add_deriv(
+            self.emitter.index,
+            self.collector.index,
+            lambda: -math.exp((self.base.value - self.collector.value) * self.coeff_in)
+            * self.coeff_out
+            * self.coeff_in,
+        )
+
+        solver.add_deriv(
+            self.collector.index,
+            self.base.index,
+            lambda: -math.exp((self.base.value - self.collector.value) * self.coeff_in)
+            * self.coeff_out
+            * self.alpha
+            * self.coeff_in,
+        )
+        solver.add_deriv(
+            self.collector.index,
+            self.collector.index,
+            lambda: math.exp((self.base.value - self.collector.value) * self.coeff_in)
+            * self.coeff_out
+            * self.alpha
+            * self.coeff_in,
+        )
+
+        solver.add_deriv(
+            self.base.index,
+            self.base.index,
+            lambda: -math.exp((self.base.value - self.collector.value) * self.coeff_in)
+            * self.coeff_out
+            * (1 - self.alpha)
+            * self.coeff_in,
+        )
+        solver.add_deriv(
+            self.base.index,
+            self.collector.index,
+            lambda: math.exp((self.base.value - self.collector.value) * self.coeff_in)
+            * self.coeff_out
+            * (1 - self.alpha)
+            * self.coeff_in,
+        )
+
+
 class Circuit:
     def __init__(self):
         self.gnd = Var(None, "gnd")
@@ -213,10 +301,10 @@ v2 = c.new_var("v2")
 v3 = c.new_var("v3")
 i = c.new_var("i")
 
-c.new_component(VoltageSource(10, c.gnd, v1, i))
-c.new_component(Diode(1 / 0.026, 1e-14, v1, v2))
-c.new_component(Resistor(50, v2, v3))
-c.new_component(Capacitor(1, v3, c.gnd))
+c.new_component(VoltageSource(3, c.gnd, v1, i))
+c.new_component(Resistor(100, v1, v2))
+c.new_component(Resistor(100, v1, v3))
+c.new_component(Bjt(1 / 0.026, 1e-14, 0.98, v2, v3, c.gnd))
 
 
 solver = c.solve()
@@ -235,6 +323,6 @@ for _ in range(100000):
             v.value = X[v.index]
     if not numpy.allclose(old_x, X):
         raise Exception("Convergence failed!")
-    print(v3.value - c.gnd.value, i.value)
+    print(v1.value, v2.value, v3.value, i.value)
     for v in c.vars:
         v.old_value = v.value
