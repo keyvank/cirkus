@@ -1,3 +1,5 @@
+DT = 0.1
+
 class Var:
     def __init__(self, index, name, value=0):
         self.index = index
@@ -77,13 +79,12 @@ class Capacitor(Component):
         self.b = b
 
     def apply(self, solver: Solver):
-        dt = 0.01
         solver.add_func(
             self.a.index,
             lambda: (
                 (self.a.value - self.b.value) - (self.a.old_value - self.b.old_value)
             )
-            / dt
+            / DT
             * self.farads,
         )
         solver.add_func(
@@ -91,14 +92,14 @@ class Capacitor(Component):
             lambda: -(
                 (self.a.value - self.b.value) - (self.a.old_value - self.b.old_value)
             )
-            / dt
+            / DT
             * self.farads,
         )
 
-        solver.add_deriv(self.a.index, self.a.index, lambda: self.farads / dt)
-        solver.add_deriv(self.a.index, self.b.index, lambda: -self.farads / dt)
-        solver.add_deriv(self.b.index, self.a.index, lambda: -self.farads / dt)
-        solver.add_deriv(self.b.index, self.b.index, lambda: self.farads / dt)
+        solver.add_deriv(self.a.index, self.a.index, lambda: self.farads / DT)
+        solver.add_deriv(self.a.index, self.b.index, lambda: -self.farads / DT)
+        solver.add_deriv(self.b.index, self.a.index, lambda: -self.farads / DT)
+        solver.add_deriv(self.b.index, self.b.index, lambda: self.farads / DT)
 
 
 import math
