@@ -225,20 +225,16 @@ import numpy
 
 for _ in range(100000):
     for _ in range(1000):
-        X_prime = solver.jacobian([v1, v2, v3, i])
+        X_prime = solver.jacobian(c.vars)
         X_prime_inv = numpy.linalg.inv(X_prime)
-        X = [v1.value, v2.value, v3.value, i.value]
-        f_X = [solver.eval(0), solver.eval(1), solver.eval(2), solver.eval(3)]
+        X = [v.value for v in c.vars]
+        f_X = [solver.eval(v.index) for v in c.vars]
         old_x = X
         X = X - numpy.dot(X_prime_inv, f_X)
-        v1.value = X[0]
-        v2.value = X[1]
-        v3.value = X[2]
-        i.value = X[3]
+        for v in c.vars:
+            v.value = X[v.index]
     if not numpy.allclose(old_x, X):
         raise Exception("Convergence failed!")
     print(v3.value - c.gnd.value, i.value)
-    v1.old_value = v1.value
-    v2.old_value = v2.value
-    v3.old_value = v3.value
-    i.old_value = i.value
+    for v in c.vars:
+        v.old_value = v.value
