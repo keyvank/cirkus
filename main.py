@@ -1,6 +1,3 @@
-from matrix import Matrix
-
-
 class Solver:
     def __init__(self, num_funcs) -> None:
         self.funcs = [list() for _ in range(num_funcs)]
@@ -42,7 +39,7 @@ class Component:
     def __init__(self):
         pass
 
-    def apply(self, mat: Matrix):
+    def apply(self, solver: Solver):
         raise NotImplemented
 
 
@@ -116,7 +113,7 @@ class CurrentSource(Component):
         self.a = a
         self.b = b
 
-    def apply(self, solver: Matrix):
+    def apply(self, solver: Solver):
         solver.add_func(self.a.index, lambda: self.amps)
         solver.add_func(self.b.index, lambda: -self.amps)
 
@@ -129,7 +126,7 @@ class VoltageSource(Component):
         self.b = b
         self.i = i
 
-    def apply(self, solver: Matrix):
+    def apply(self, solver: Solver):
         solver.add_func(self.a.index, lambda: self.i.value)
         solver.add_func(self.b.index, lambda: -self.i.value)
         solver.add_func(self.i.index, lambda: self.b.value - self.a.value - self.volts)
