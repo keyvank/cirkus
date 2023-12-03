@@ -160,9 +160,10 @@ v3 = c.new_var("v3")
 i = c.new_var("i")
 
 c.new_component(VoltageSource(10, c.gnd, v1, i))
-c.new_component(Resistor(50, v1, v2))
-c.new_component(Capacitor(1, v2, v3))
-c.new_component(Diode(1, 1, v3, c.gnd))
+c.new_component(Diode(6, 1e-2, v1, v2))
+c.new_component(Resistor(50, v2, v3))
+c.new_component(Resistor(50, v3, c.gnd))
+
 
 
 solver = c.solve()
@@ -183,7 +184,7 @@ for _ in range(100000):
         i.value = X[3]
     if not numpy.allclose(old_x, X):
         raise Exception("Convergence failed!")
-    print(v2.value, i.value)
+    print(v1.value - v2.value, i.value)
     v1.old_value = v1.value
     v2.old_value = v2.value
     v3.old_value = v3.value
