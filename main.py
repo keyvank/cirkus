@@ -1,18 +1,22 @@
+class Var:
+    def __init__(self, index, name, value=0):
+        self.index = index
+        self.name = name
+        self.old_value = 0
+        self.value = value
+
+
 class Solver:
     def __init__(self, num_funcs) -> None:
         self.funcs = [list() for _ in range(num_funcs)]
+        self.derivs = [dict() for _ in range(num_funcs)]
 
     def jacobian(self, Vars):
-        h = 1e-6
         res = []
         for f in range(len(self.funcs)):
             row = []
             for v in range(len(self.funcs)):
-                old = self.eval(f)
-                Vars[v].value += h
-                new = self.eval(f)
-                Vars[v].value -= h
-                row.append((new - old) / h)
+                row.append(self.eval_deriv(f, v))
             res.append(row)
         return res
 
@@ -20,19 +24,24 @@ class Solver:
         if ind is not None:
             self.funcs[ind].append(f)
 
+    def add_deriv(self, ind, by_ind, f):
+        if ind is not None:
+            if by_ind not in self.derivs[ind]:
+                self.derivs[ind][by_ind] = []
+            self.derivs[ind][by_ind].append(f)
+
     def eval(self, ind):
         res = 0
         for f in self.funcs[ind]:
             res += f()
         return res
 
-
-class Var:
-    def __init__(self, index, name, value=0):
-        self.index = index
-        self.name = name
-        self.old_value = 0
-        self.value = value
+    def eval_deriv(self, ind, by_ind):
+        res = 0
+        if by_ind in self.derivs[ind]:
+            for f in self.derivs[ind][by_ind]:
+                res += f()
+        return res
 
 
 class Component:
@@ -53,6 +62,11 @@ class Resistor(Component):
     def apply(self, solver: Solver):
         solver.add_func(self.a.index, lambda: (self.a.value - self.b.value) / self.ohms)
         solver.add_func(self.b.index, lambda: (self.b.value - self.a.value) / self.ohms)
+
+        solver.add_deriv(self.a.index, self.a.index, lambda: 1 / self.ohms)
+        solver.add_deriv(self.a.index, self.b.index, lambda: -1 / self.ohms)
+        solver.add_deriv(self.b.index, self.a.index, lambda: -1 / self.ohms)
+        solver.add_deriv(self.b.index, self.b.index, lambda: 1 / self.ohms)
 
 
 class Capacitor(Component):
@@ -81,6 +95,11 @@ class Capacitor(Component):
             * self.farads,
         )
 
+        solver.add_deriv(self.a.index, self.a.index, lambda: self.farads / dt)
+        solver.add_deriv(self.a.index, self.b.index, lambda: -self.farads / dt)
+        solver.add_deriv(self.b.index, self.a.index, lambda: -self.farads / dt)
+        solver.add_deriv(self.b.index, self.b.index, lambda: self.farads / dt)
+
 
 import math
 
@@ -103,6 +122,35 @@ class Diode(Component):
             self.b.index,
             lambda: -(math.exp((self.a.value - self.b.value) * self.coeff_in) - 1)
             * self.coeff_out,
+        )
+
+        solver.add_deriv(
+            self.a.index,
+            self.a.index,
+            lambda: math.exp((self.a.value - self.b.value) * self.coeff_in)
+            * self.coeff_out
+            * self.coeff_in,
+        )
+        solver.add_deriv(
+            self.a.index,
+            self.b.index,
+            lambda: -math.exp((self.a.value - self.b.value) * self.coeff_in)
+            * self.coeff_out
+            * self.coeff_in,
+        )
+        solver.add_deriv(
+            self.b.index,
+            self.a.index,
+            lambda: -math.exp((self.a.value - self.b.value) * self.coeff_in)
+            * self.coeff_out
+            * self.coeff_in,
+        )
+        solver.add_deriv(
+            self.b.index,
+            self.b.index,
+            lambda: math.exp((self.a.value - self.b.value) * self.coeff_in)
+            * self.coeff_out
+            * self.coeff_in,
         )
 
 
@@ -131,23 +179,28 @@ class VoltageSource(Component):
         solver.add_func(self.b.index, lambda: -self.i.value)
         solver.add_func(self.i.index, lambda: self.b.value - self.a.value - self.volts)
 
+        solver.add_deriv(self.a.index, self.i.index, lambda: 1)
+        solver.add_deriv(self.b.index, self.i.index, lambda: -1)
+        solver.add_deriv(self.i.index, self.a.index, lambda: -1)
+        solver.add_deriv(self.i.index, self.b.index, lambda: 1)
+
 
 class Circuit:
     def __init__(self):
         self.gnd = Var(None, "gnd")
-        self.Vars = []
+        self.vars = []
         self.components = []
 
     def new_var(self, name) -> Var:
-        n = Var(len(self.Vars), name, value=1)
-        self.Vars.append(n)
+        n = Var(len(self.vars), name, value=1)
+        self.vars.append(n)
         return n
 
     def new_component(self, comp: Component):
         self.components.append(comp)
 
     def solve(self):
-        solver = Solver(len(self.Vars))
+        solver = Solver(len(self.vars))
         for comp in self.components:
             comp.apply(solver)
         return solver
@@ -160,10 +213,9 @@ v3 = c.new_var("v3")
 i = c.new_var("i")
 
 c.new_component(VoltageSource(10, c.gnd, v1, i))
-c.new_component(Diode(6, 1e-2, v1, v2))
+c.new_component(Diode(1 / 0.026, 1e-14, v1, v2))
 c.new_component(Resistor(50, v2, v3))
-c.new_component(Resistor(50, v3, c.gnd))
-
+c.new_component(Capacitor(1, v3, c.gnd))
 
 
 solver = c.solve()
@@ -171,7 +223,7 @@ solver = c.solve()
 import numpy
 
 for _ in range(100000):
-    for _ in range(10):
+    for _ in range(1000):
         X_prime = solver.jacobian([v1, v2, v3, i])
         X_prime_inv = numpy.linalg.inv(X_prime)
         X = [v1.value, v2.value, v3.value, i.value]
@@ -184,7 +236,7 @@ for _ in range(100000):
         i.value = X[3]
     if not numpy.allclose(old_x, X):
         raise Exception("Convergence failed!")
-    print(v1.value - v2.value, i.value)
+    print(v3.value - c.gnd.value, i.value)
     v1.old_value = v1.value
     v2.old_value = v2.value
     v3.old_value = v3.value
