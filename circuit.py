@@ -53,3 +53,24 @@ class Component:
 
     def apply(self, solver: Solver):
         raise NotImplemented
+
+
+class Circuit:
+    def __init__(self):
+        self.gnd = Var(None, "gnd")
+        self.vars = []
+        self.components = []
+
+    def new_var(self, name) -> Var:
+        n = Var(len(self.vars), name, value=1)
+        self.vars.append(n)
+        return n
+
+    def new_component(self, comp: Component):
+        self.components.append(comp)
+
+    def solve(self):
+        solver = Solver(len(self.vars))
+        for comp in self.components:
+            comp.apply(solver)
+        return solver
