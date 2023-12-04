@@ -1,4 +1,4 @@
-from circuit import Component, Var, Solver
+from circuit import Component, Var, Solver, DT
 
 
 class Resistor(Component):
