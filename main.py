@@ -1,58 +1,4 @@
-DT = 0.1
-
-
-class Var:
-    def __init__(self, index, name, value=0):
-        self.index = index
-        self.name = name
-        self.old_value = 0
-        self.value = value
-
-
-class Solver:
-    def __init__(self, num_funcs) -> None:
-        self.funcs = [list() for _ in range(num_funcs)]
-        self.derivs = [dict() for _ in range(num_funcs)]
-
-    def jacobian(self, Vars):
-        res = []
-        for f in range(len(self.funcs)):
-            row = []
-            for v in range(len(self.funcs)):
-                row.append(self.eval_deriv(f, v))
-            res.append(row)
-        return res
-
-    def add_func(self, ind, f):
-        if ind is not None:
-            self.funcs[ind].append(f)
-
-    def add_deriv(self, ind, by_ind, f):
-        if ind is not None:
-            if by_ind not in self.derivs[ind]:
-                self.derivs[ind][by_ind] = []
-            self.derivs[ind][by_ind].append(f)
-
-    def eval(self, ind):
-        res = 0
-        for f in self.funcs[ind]:
-            res += f()
-        return res
-
-    def eval_deriv(self, ind, by_ind):
-        res = 0
-        if by_ind in self.derivs[ind]:
-            for f in self.derivs[ind][by_ind]:
-                res += f()
-        return res
-
-
-class Component:
-    def __init__(self):
-        pass
-
-    def apply(self, solver: Solver):
-        raise NotImplemented
+from circuit import Component, Var, Solver
 
 
 class Resistor(Component):
@@ -187,93 +133,6 @@ class VoltageSource(Component):
         solver.add_deriv(self.i.index, self.b.index, lambda: 1)
 
 
-class Bjt(Component):
-    def __init__(
-        self, coeff_in, coeff_out, alpha, base: Var, emitter: Var, collector: Var
-    ):
-        super().__init__()
-        self.coeff_in = coeff_in
-        self.coeff_out = coeff_out
-        self.alpha = alpha
-        self.base = base
-        self.emitter = emitter
-        self.collector = collector
-
-    def apply(self, solver: Solver):
-        solver.add_func(
-            self.emitter.index,
-            lambda: (
-                math.exp((self.base.value - self.collector.value) * self.coeff_in) - 1
-            )
-            * self.coeff_out,
-        )
-        solver.add_func(
-            self.collector.index,
-            lambda: -(
-                math.exp((self.base.value - self.collector.value) * self.coeff_in) - 1
-            )
-            * self.coeff_out
-            * self.alpha,
-        )
-        solver.add_func(
-            self.base.index,
-            lambda: -(
-                math.exp((self.base.value - self.collector.value) * self.coeff_in) - 1
-            )
-            * self.coeff_out
-            * (1 - self.alpha),
-        )
-
-        solver.add_deriv(
-            self.emitter.index,
-            self.base.index,
-            lambda: math.exp((self.base.value - self.collector.value) * self.coeff_in)
-            * self.coeff_out
-            * self.coeff_in,
-        )
-        solver.add_deriv(
-            self.emitter.index,
-            self.collector.index,
-            lambda: -math.exp((self.base.value - self.collector.value) * self.coeff_in)
-            * self.coeff_out
-            * self.coeff_in,
-        )
-
-        solver.add_deriv(
-            self.collector.index,
-            self.base.index,
-            lambda: -math.exp((self.base.value - self.collector.value) * self.coeff_in)
-            * self.coeff_out
-            * self.alpha
-            * self.coeff_in,
-        )
-        solver.add_deriv(
-            self.collector.index,
-            self.collector.index,
-            lambda: math.exp((self.base.value - self.collector.value) * self.coeff_in)
-            * self.coeff_out
-            * self.alpha
-            * self.coeff_in,
-        )
-
-        solver.add_deriv(
-            self.base.index,
-            self.base.index,
-            lambda: -math.exp((self.base.value - self.collector.value) * self.coeff_in)
-            * self.coeff_out
-            * (1 - self.alpha)
-            * self.coeff_in,
-        )
-        solver.add_deriv(
-            self.base.index,
-            self.collector.index,
-            lambda: math.exp((self.base.value - self.collector.value) * self.coeff_in)
-            * self.coeff_out
-            * (1 - self.alpha)
-            * self.coeff_in,
-        )
-
-
 class Circuit:
     def __init__(self):
         self.gnd = Var(None, "gnd")
@@ -301,10 +160,12 @@ v2 = c.new_var("v2")
 v3 = c.new_var("v3")
 i = c.new_var("i")
 
+from bjt import Bjt
+
 c.new_component(VoltageSource(3, c.gnd, v1, i))
-c.new_component(Resistor(100, v1, v2))
+c.new_component(Resistor(500, v1, v2))
 c.new_component(Resistor(100, v1, v3))
-c.new_component(Bjt(1 / 0.026, 1e-14, 0.98, v2, v3, c.gnd))
+c.new_component(Bjt(1 / 0.026, 1e-14, 0.98, 10, 250, v2, v3, c.gnd))
 
 
 solver = c.solve()
