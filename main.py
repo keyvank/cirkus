@@ -11,7 +11,8 @@ i = c.new_var("i")
 
 from components.bjt import Bjt
 
-c.new_component(VoltageSource(1.5, c.gnd, v1, i))
+vol=VoltageSource(1, c.gnd, v1, i)
+c.new_component(vol)
 c.new_component(Resistor(100, v1, v2))
 c.new_component(Resistor(100, v1, v3))
 c.new_component(Bjt(1 / 0.026, 1e-14, 10, 250, v2, v3, v4))
@@ -35,5 +36,6 @@ for _ in range(100000):
     if not numpy.allclose(old_x, X):
         raise Exception("Convergence failed!")
     print(v1.value, v2.value, v3.value, i.value)
+    vol.volts += 0.1
     for v in c.vars:
         v.old_value = v.value
