@@ -1,23 +1,31 @@
 from circuit import Circuit
-from components import Resistor, Bjt, VoltageSource
+from components import Resistor, Bjt, VoltageSource, Capacitor
 
+VOLTAGE = 1
+R_COLLECTOR = 470
+R_BASE = 47000
+CAP = 0.000010
 
 c = Circuit()
-v1 = c.new_var("v1")
-v2 = c.new_var("v2")
-v3 = c.new_var("v3")
-v4 = c.new_var("v4")
+top = c.new_var("top")
+o1 = c.new_var("o1")
+o2 = c.new_var("o2")
+b1 = c.new_var("b1")
+b2 = c.new_var("b2")
 i = c.new_var("i")
 
 from components.bjt import Bjt
 
-vol=VoltageSource(1, c.gnd, v1, i)
+vol = VoltageSource(VOLTAGE, c.gnd, top, i)
 c.new_component(vol)
-c.new_component(Resistor(100, v1, v2))
-c.new_component(Resistor(100, v1, v3))
-c.new_component(Bjt(1 / 0.026, 1e-14, 10, 250, v2, v3, v4))
-c.new_component(Resistor(100, v4, c.gnd))
-
+c.new_component(Resistor(R_COLLECTOR, top, o1))
+c.new_component(Resistor(R_COLLECTOR, top, o2))
+c.new_component(Resistor(R_BASE, top, b1))
+c.new_component(Resistor(R_BASE, top, b2))
+c.new_component(Capacitor(CAP, o1, b2))
+c.new_component(Capacitor(CAP, o2, b1))
+c.new_component(Bjt(1 / 0.026, 1e-14, 10, 250, b1, o1, c.gnd))
+c.new_component(Bjt(1 / 0.026, 1e-14, 10, 250, b2, o2, c.gnd))
 
 solver = c.solve()
 
@@ -35,7 +43,7 @@ for _ in range(100000):
             v.value = X[v.index]
     if not numpy.allclose(old_x, X):
         raise Exception("Convergence failed!")
-    print(v1.value, v2.value, v3.value, i.value)
-    vol.volts += 0.1
+    print(o1.value, o2.value)
+    # vol.volts += 0.1
     for v in c.vars:
         v.old_value = v.value

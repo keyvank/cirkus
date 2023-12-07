@@ -1,3 +1,5 @@
+import random
+
 DT = 0.1
 
 
@@ -62,7 +64,7 @@ class Circuit:
         self.components = []
 
     def new_var(self, name) -> Var:
-        n = Var(len(self.vars), name, value=1)
+        n = Var(len(self.vars), name, value=random.random())
         self.vars.append(n)
         return n
 
