@@ -139,10 +139,10 @@ class Bjt(Component):
             lambda: -math.exp((self.base.value - self.emitter.value) * self.coeff_in)
             * self.coeff_out
             * self.coeff_in
-            - math.exp((self.base.value - self.collector.value) * self.coeff_in)
+            + math.exp((self.base.value - self.collector.value) * self.coeff_in)
             * self.coeff_out
             * self.coeff_in
-            + (1 / self.beta_f)
+            - (1 / self.beta_f)
             * math.exp((self.base.value - self.emitter.value) * self.coeff_in)
             * self.coeff_out
             * self.coeff_in,
