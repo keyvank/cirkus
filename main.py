@@ -11,9 +11,9 @@ i = c.new_var("i")
 from components.bjt import Bjt
 
 c.new_component(VoltageSource(3, c.gnd, v1, i))
-c.new_component(Resistor(500, v1, v2))
+c.new_component(Resistor(100, v1, v2))
 c.new_component(Resistor(100, v1, v3))
-c.new_component(Bjt(1 / 0.026, 1e-14, 0.98, 10, 250, v2, v3, c.gnd))
+c.new_component(Bjt(1 / 0.026, 1e-14, 10, 250, v2, v3, c.gnd))
 
 
 solver = c.solve()
