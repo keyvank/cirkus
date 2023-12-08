@@ -38,14 +38,15 @@ i = c.new_var("i")
 
 from components.bjt import Bjt
 
-vol = VoltageSource(VOLTAGE, c.gnd, top, i)
-c.new_component(vol)
+DT = 0.05
+
+c.new_component(VoltageSource(VOLTAGE, c.gnd, top, i))
 c.new_component(Resistor(R_COLLECTOR, top, o1))
 c.new_component(Resistor(R_COLLECTOR, top, o2))
 c.new_component(Resistor(R_BASE, top, b1))
 c.new_component(Resistor(R_BASE, top, b2))
-c.new_component(Capacitor(CAP, o1, b2))
-c.new_component(Capacitor(CAP, o2, b1))
+c.new_component(Capacitor(CAP, DT, o1, b2))
+c.new_component(Capacitor(CAP, DT, o2, b1))
 c.new_component(Bjt(1 / 0.026, 1e-14, 10, 250, b1, o1, c.gnd))
 c.new_component(Bjt(1 / 0.026, 1e-14, 10, 250, b2, o2, c.gnd))
 
@@ -69,6 +70,7 @@ for _ in range(100000):
     except KeyboardInterrupt as e:
         raise e
     except:
+        # Start from another random solution
         for v in c.vars:
             v.value = random.random()
         continue

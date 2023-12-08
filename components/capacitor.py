@@ -1,9 +1,10 @@
-from circuit import Var, Component, Solver, DT
+from circuit import Var, Component, Solver
 
 
 class Capacitor(Component):
-    def __init__(self, farads, a: Var, b: Var):
+    def __init__(self, farads, dt, a: Var, b: Var):
         super().__init__()
+        self.dt = dt
         self.farads = farads
         self.a = a
         self.b = b
@@ -14,7 +15,7 @@ class Capacitor(Component):
             lambda: (
                 (self.a.value - self.b.value) - (self.a.old_value - self.b.old_value)
             )
-            / DT
+            / self.dt
             * self.farads,
         )
         solver.add_func(
@@ -22,11 +23,11 @@ class Capacitor(Component):
             lambda: -(
                 (self.a.value - self.b.value) - (self.a.old_value - self.b.old_value)
             )
-            / DT
+            / self.dt
             * self.farads,
         )
 
-        solver.add_deriv(self.a.index, self.a.index, lambda: self.farads / DT)
-        solver.add_deriv(self.a.index, self.b.index, lambda: -self.farads / DT)
-        solver.add_deriv(self.b.index, self.a.index, lambda: -self.farads / DT)
-        solver.add_deriv(self.b.index, self.b.index, lambda: self.farads / DT)
+        solver.add_deriv(self.a.index, self.a.index, lambda: self.farads / self.dt)
+        solver.add_deriv(self.a.index, self.b.index, lambda: -self.farads / self.dt)
+        solver.add_deriv(self.b.index, self.a.index, lambda: -self.farads / self.dt)
+        solver.add_deriv(self.b.index, self.b.index, lambda: self.farads / self.dt)

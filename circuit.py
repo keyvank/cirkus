@@ -1,7 +1,5 @@
 import random
 
-DT = 0.1
-
 
 class Var:
     def __init__(self, index, name, value=0):
