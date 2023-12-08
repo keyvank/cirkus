@@ -6,8 +6,8 @@ def test_bjt():
     import numpy
 
     base = Var(0, "base", 1.8)
-    col = Var(1, "col", 1)
-    em = Var(2, "em", 1)
+    col = Var(1, "col", 1.1)
+    em = Var(2, "em", 1.05)
     bjt = Bjt(1 / 0.026, 1e-14, 10, 250, base, col, em)
     solver = Solver(3)
     bjt.apply(solver)
@@ -21,9 +21,9 @@ def test_bjt():
 
 
 test_bjt()
-exit(0)
+# exit(0)
 
-VOLTAGE = 1
+VOLTAGE = 5
 R_COLLECTOR = 470
 R_BASE = 47000
 CAP = 0.000010
@@ -51,21 +51,28 @@ c.new_component(Bjt(1 / 0.026, 1e-14, 10, 250, b2, o2, c.gnd))
 
 solver = c.solve()
 
-import numpy
+import numpy, random
 
 for _ in range(100000):
-    for _ in range(1000):
-        X_prime = solver.jacobian(c.vars)
-        X_prime_inv = numpy.linalg.inv(X_prime)
-        X = [v.value for v in c.vars]
-        f_X = [solver.eval(v.index) for v in c.vars]
-        old_x = X
-        X = X - numpy.dot(X_prime_inv, f_X)
+    try:
+        for _ in range(1000):
+            X_prime = solver.jacobian(c.vars)
+            X_prime_inv = numpy.linalg.inv(X_prime)
+            X = [v.value for v in c.vars]
+            f_X = [solver.eval(v.index) for v in c.vars]
+            old_x = X
+            X = X - numpy.dot(X_prime_inv, f_X)
+            for v in c.vars:
+                v.value = X[v.index]
+        if not numpy.allclose(f_X, 0):
+            raise Exception("Convergence failed!")
+    except KeyboardInterrupt as e:
+        raise e
+    except:
         for v in c.vars:
-            v.value = X[v.index]
-    if not numpy.allclose(old_x, X):
-        raise Exception("Convergence failed!")
+            v.value = random.random()
+        continue
+
     print(o1.value, o2.value)
-    # vol.volts += 0.1
     for v in c.vars:
         v.old_value = v.value
