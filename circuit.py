@@ -1,19 +1,25 @@
 import random
+import numpy
+
+
+class ConvergenceError(Exception):
+    pass
 
 
 class Var:
-    def __init__(self, index, value=0):
+    def __init__(self, index):
         self.index = index
         self.old_value = 0
-        self.value = value
+        self.value = 0
 
 
 class Solver:
-    def __init__(self, num_funcs) -> None:
-        self.funcs = [list() for _ in range(num_funcs)]
-        self.derivs = [dict() for _ in range(num_funcs)]
+    def __init__(self, variables) -> None:
+        self.variables = variables
+        self.funcs = [list() for _ in range(len(variables))]
+        self.derivs = [dict() for _ in range(len(variables))]
 
-    def jacobian(self, Vars):
+    def jacobian(self):
         res = []
         for f in range(len(self.funcs)):
             row = []
@@ -22,15 +28,15 @@ class Solver:
             res.append(row)
         return res
 
-    def numerical_jacobian(self, Vars, delta=1e-6):
+    def numerical_jacobian(self, delta=1e-6):
         res = []
         for f in range(len(self.funcs)):
             row = []
             for v in range(len(self.funcs)):
                 old_val = self.eval(f)
-                Vars[v].value += delta
+                self.variables[v].value += delta
                 new_val = self.eval(f)
-                Vars[v].value -= delta
+                self.variables[v].value -= delta
                 row.append((new_val - old_val) / delta)
             res.append(row)
         return res
@@ -58,6 +64,39 @@ class Solver:
                 res += f()
         return res
 
+    def is_solved(self):
+        for i in range(len(self.funcs)):
+            if not numpy.allclose(self.eval(i), 0):
+                return False
+        return True
+
+    def step(self, max_iters=1000, max_tries=100, alpha=1):
+        solved = False
+        for _ in range(max_tries):
+            try:
+                iters = 0
+                while not solved:
+                    x = [v.value for v in self.variables]
+                    f_x = [self.eval(v.index) for v in self.variables]
+                    f_prime_x = self.jacobian()
+                    f_prime_x_inv = numpy.linalg.inv(f_prime_x)
+                    x = x - alpha * numpy.dot(f_prime_x_inv, f_x)
+                    for v in self.variables:
+                        v.value = x[v.index]
+                    solved = self.is_solved()
+                    if iters >= max_iters:
+                        raise ConvergenceError
+                    iters += 1
+            except (OverflowError, ConvergenceError):
+                # Start from another random solution
+                for v in self.variables:
+                    v.value = random.random()
+            if solved:
+                for v in self.variables:
+                    v.old_value = v.value
+                return
+        raise ConvergenceError
+
 
 class Component:
     def __init__(self):
@@ -74,15 +113,15 @@ class Circuit:
         self.components = []
 
     def new_var(self) -> Var:
-        n = Var(len(self.vars), value=random.random())
+        n = Var(len(self.vars))
         self.vars.append(n)
         return n
 
     def new_component(self, comp: Component):
         self.components.append(comp)
 
-    def solve(self):
-        solver = Solver(len(self.vars))
+    def solver(self) -> Solver:
+        solver = Solver(self.vars)
         for comp in self.components:
             comp.apply(solver)
         return solver
