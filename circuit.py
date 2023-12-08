@@ -25,6 +25,19 @@ class Solver:
             res.append(row)
         return res
 
+    def numerical_jacobian(self, Vars, delta=1e-6):
+        res = []
+        for f in range(len(self.funcs)):
+            row = []
+            for v in range(len(self.funcs)):
+                old_val = self.eval(f)
+                Vars[v].value += delta
+                new_val = self.eval(f)
+                Vars[v].value -= delta
+                row.append((new_val - old_val) / delta)
+            res.append(row)
+        return res
+
     def add_func(self, ind, f):
         if ind is not None:
             self.funcs[ind].append(f)
