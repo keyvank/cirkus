@@ -158,3 +158,25 @@ class Bjt(Component):
             * self.coeff_out
             * self.coeff_in,
         )
+
+
+def test_bjt():
+    import numpy
+
+    base = Var(0, "base", 1.8)
+    col = Var(1, "col", 1.1)
+    em = Var(2, "em", 1.05)
+    bjt = Bjt(1 / 0.026, 1e-14, 10, 250, base, col, em)
+    solver = Solver(3)
+    bjt.apply(solver)
+    aa = solver.eval(0)
+    bb = solver.eval(1)
+    cc = solver.eval(2)
+    jac = solver.jacobian([base, col, em])
+    num_jac = solver.numerical_jacobian([base, col, em], 1e-10)
+    print(numpy.isclose(aa + bb + cc, 0))
+    print(numpy.isclose(numpy.array(jac), numpy.array(num_jac)))
+
+
+if __name__ == "__main__":
+    test_bjt()

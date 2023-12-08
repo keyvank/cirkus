@@ -1,27 +1,9 @@
+import numpy
+import random
+from matplotlib import pyplot as plt
+
 from circuit import Circuit, Var, Solver
 from components import Resistor, Bjt, VoltageSource, Capacitor
-
-
-def test_bjt():
-    import numpy
-
-    base = Var(0, "base", 1.8)
-    col = Var(1, "col", 1.1)
-    em = Var(2, "em", 1.05)
-    bjt = Bjt(1 / 0.026, 1e-14, 10, 250, base, col, em)
-    solver = Solver(3)
-    bjt.apply(solver)
-    aa = solver.eval(0)
-    bb = solver.eval(1)
-    cc = solver.eval(2)
-    jac = solver.jacobian([base, col, em])
-    num_jac = solver.numerical_jacobian([base, col, em], 1e-10)
-    print(numpy.isclose(aa + bb + cc, 0))
-    print(numpy.isclose(numpy.array(jac), numpy.array(num_jac)))
-
-
-test_bjt()
-# exit(0)
 
 VOLTAGE = 5
 R_COLLECTOR = 470
@@ -36,10 +18,7 @@ b1 = c.new_var("b1")
 b2 = c.new_var("b2")
 i = c.new_var("i")
 
-from components.bjt import Bjt
-
-DT = 0.05
-
+DT = 0.01
 c.new_component(VoltageSource(VOLTAGE, c.gnd, top, i))
 c.new_component(Resistor(R_COLLECTOR, top, o1))
 c.new_component(Resistor(R_COLLECTOR, top, o2))
@@ -52,9 +31,12 @@ c.new_component(Bjt(1 / 0.026, 1e-14, 10, 250, b2, o2, c.gnd))
 
 solver = c.solve()
 
-import numpy, random
 
-for _ in range(100000):
+t = 0
+
+points = []
+
+for _ in range(500):
     try:
         for _ in range(1000):
             X_prime = solver.jacobian(c.vars)
@@ -65,6 +47,8 @@ for _ in range(100000):
             X = X - numpy.dot(X_prime_inv, f_X)
             for v in c.vars:
                 v.value = X[v.index]
+            if numpy.allclose(f_X, 0):
+                break
         if not numpy.allclose(f_X, 0):
             raise Exception("Convergence failed!")
     except KeyboardInterrupt as e:
@@ -75,6 +59,11 @@ for _ in range(100000):
             v.value = random.random()
         continue
 
-    print(o1.value, o2.value)
+    print(t, o1.value)
+    points.append(o1.value)
     for v in c.vars:
         v.old_value = v.value
+    t += DT
+
+plt.plot(points)
+plt.show()
