@@ -11,12 +11,12 @@ R_BASE = 47000
 CAP = 0.000010
 
 c = Circuit()
-top = c.new_var("top")
-o1 = c.new_var("o1")
-o2 = c.new_var("o2")
-b1 = c.new_var("b1")
-b2 = c.new_var("b2")
-i = c.new_var("i")
+top = c.new_var()
+o1 = c.new_var()
+o2 = c.new_var()
+b1 = c.new_var()
+b2 = c.new_var()
+i = c.new_var()
 
 DT = 0.01
 c.new_component(VoltageSource(VOLTAGE, c.gnd, top, i))

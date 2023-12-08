@@ -2,9 +2,8 @@ import random
 
 
 class Var:
-    def __init__(self, index, name, value=0):
+    def __init__(self, index, value=0):
         self.index = index
-        self.name = name
         self.old_value = 0
         self.value = value
 
@@ -70,12 +69,12 @@ class Component:
 
 class Circuit:
     def __init__(self):
-        self.gnd = Var(None, "gnd")
+        self.gnd = Var(None)
         self.vars = []
         self.components = []
 
-    def new_var(self, name) -> Var:
-        n = Var(len(self.vars), name, value=random.random())
+    def new_var(self) -> Var:
+        n = Var(len(self.vars), value=random.random())
         self.vars.append(n)
         return n
 
