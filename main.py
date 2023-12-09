@@ -48,32 +48,34 @@ def astable_multivib():
     plt.show()
 
 
-def inductor():
-    DT = 0.01
+def rlc():
+    DT = 0.001
     VOLTAGE = 5
-    R = 100
-    L = 10
+    R = 0.5
+    L = 1
+    CAP = 0.1
 
     c = Circuit()
     v1 = c.new_var()
     v2 = c.new_var()
-    i_vss = c.new_var()
     i_inductor = c.new_var()
 
-    c.new_component(VoltageSource(VOLTAGE, c.gnd, v1, i_vss))
+    c.new_component(Capacitor(CAP, DT, c.gnd, v1))
     c.new_component(Resistor(R, v1, v2))
     c.new_component(Inductor(L, DT, v2, c.gnd, i_inductor))
+
+    v1.old_value = VOLTAGE
 
     solver = c.solver()
 
     t = 0
-    duration = 3  # Seconds
+    duration = 10  # Seconds
 
     points = []
 
     while t < duration:
         solver.step()
-        print(t, i_inductor.value, i_vss.value)
+        print(t, i_inductor.value)
         points.append(i_inductor.value)
         t += DT
 
@@ -81,4 +83,4 @@ def inductor():
     plt.show()
 
 
-inductor()
+rlc()
