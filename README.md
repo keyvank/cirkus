@@ -6,6 +6,7 @@ Cirkus is a very minimal electronics circuit simulator which I built for sake of
 - Voltage sources
 - Resistors
 - Capacitors
+- Inductors
 - Diodes
 - BJT Transistors
 
