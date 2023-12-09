@@ -3,44 +3,82 @@ import random
 from matplotlib import pyplot as plt
 
 from circuit import Circuit, Var, Solver
-from components import Resistor, Bjt, VoltageSource, Capacitor
+from components import Resistor, Bjt, VoltageSource, Capacitor, Inductor
 
-VOLTAGE = 5
-R_COLLECTOR = 470
-R_BASE = 47000
-CAP = 0.000010
 
-c = Circuit()
-top = c.new_var()
-o1 = c.new_var()
-o2 = c.new_var()
-b1 = c.new_var()
-b2 = c.new_var()
-i = c.new_var()
+def astable_multivib():
+    DT = 0.01
+    VOLTAGE = 5
+    R_COLLECTOR = 470
+    R_BASE = 47000
+    CAP = 0.000010
 
-DT = 0.01
-c.new_component(VoltageSource(VOLTAGE, c.gnd, top, i))
-c.new_component(Resistor(R_COLLECTOR, top, o1))
-c.new_component(Resistor(R_COLLECTOR, top, o2))
-c.new_component(Resistor(R_BASE, top, b1))
-c.new_component(Resistor(R_BASE, top, b2))
-c.new_component(Capacitor(CAP, DT, o1, b2))
-c.new_component(Capacitor(CAP, DT, o2, b1))
-c.new_component(Bjt(1 / 0.026, 1e-14, 10, 250, b1, o1, c.gnd))
-c.new_component(Bjt(1 / 0.026, 1e-14, 10, 250, b2, o2, c.gnd))
+    c = Circuit()
+    top = c.new_var()
+    o1 = c.new_var()
+    o2 = c.new_var()
+    b1 = c.new_var()
+    b2 = c.new_var()
+    i = c.new_var()
 
-solver = c.solver()
+    c.new_component(VoltageSource(VOLTAGE, c.gnd, top, i))
+    c.new_component(Resistor(R_COLLECTOR, top, o1))
+    c.new_component(Resistor(R_COLLECTOR, top, o2))
+    c.new_component(Resistor(R_BASE, top, b1))
+    c.new_component(Resistor(R_BASE, top, b2))
+    c.new_component(Capacitor(CAP, DT, o1, b2))
+    c.new_component(Capacitor(CAP, DT, o2, b1))
+    c.new_component(Bjt(1 / 0.026, 1e-14, 10, 250, b1, o1, c.gnd))
+    c.new_component(Bjt(1 / 0.026, 1e-14, 10, 250, b2, o2, c.gnd))
 
-t = 0
-duration = 3  # Seconds
+    solver = c.solver()
 
-points = []
+    t = 0
+    duration = 3  # Seconds
 
-while t < duration:
-    solver.step()
-    print(t, o1.value)
-    points.append(o1.value)
-    t += DT
+    points = []
 
-plt.plot(points)
-plt.show()
+    while t < duration:
+        solver.step()
+        print(t, o1.value)
+        points.append(o1.value)
+        t += DT
+
+    plt.plot(points)
+    plt.show()
+
+
+def inductor():
+    DT = 0.01
+    VOLTAGE = 5
+    R = 100
+    L = 10
+
+    c = Circuit()
+    v1 = c.new_var()
+    v2 = c.new_var()
+    i_vss = c.new_var()
+    i_inductor = c.new_var()
+
+    c.new_component(VoltageSource(VOLTAGE, c.gnd, v1, i_vss))
+    c.new_component(Resistor(R, v1, v2))
+    c.new_component(Inductor(L, DT, v2, c.gnd, i_inductor))
+
+    solver = c.solver()
+
+    t = 0
+    duration = 3  # Seconds
+
+    points = []
+
+    while t < duration:
+        solver.step()
+        print(t, i_inductor.value, i_vss.value)
+        points.append(i_inductor.value)
+        t += DT
+
+    plt.plot(points)
+    plt.show()
+
+
+inductor()
