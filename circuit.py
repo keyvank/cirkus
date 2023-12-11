@@ -87,7 +87,7 @@ class Solver:
                     if iters >= max_iters:
                         raise ConvergenceError
                     iters += 1
-            except (OverflowError, ConvergenceError):
+            except (OverflowError, ConvergenceError, numpy.linalg.LinAlgError):
                 # Start from another random solution
                 for v in self.variables:
                     v.value = random.random()
