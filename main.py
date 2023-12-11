@@ -13,6 +13,8 @@ def astable_multivib():
     R_BASE = 47000
     CAP = 0.000010
 
+    t = Var(None)
+
     c = Circuit()
     top = c.new_var()
     o1 = c.new_var()
@@ -21,7 +23,7 @@ def astable_multivib():
     b2 = c.new_var()
     i = c.new_var()
 
-    c.new_component(VoltageSource(VOLTAGE, c.gnd, top, i))
+    c.new_component(VoltageSource(VOLTAGE, c.gnd, top, i, t, 0))
     c.new_component(Resistor(R_COLLECTOR, top, o1))
     c.new_component(Resistor(R_COLLECTOR, top, o2))
     c.new_component(Resistor(R_BASE, top, b1))
@@ -33,16 +35,15 @@ def astable_multivib():
 
     solver = c.solver()
 
-    t = 0
     duration = 3  # Seconds
 
     points = []
 
-    while t < duration:
+    while t.value < duration:
         solver.step()
-        print(t, o1.value)
+        print(t.value, o1.value)
         points.append(o1.value)
-        t += DT
+        t.value += DT
 
     plt.plot(points)
     plt.show()
@@ -54,6 +55,8 @@ def rlc():
     R = 0.5
     L = 1
     CAP = 0.1
+
+    t = Var(None)
 
     c = Circuit()
     v1 = c.new_var()
@@ -68,16 +71,55 @@ def rlc():
 
     solver = c.solver()
 
-    t = 0
     duration = 10  # Seconds
 
     points = []
 
-    while t < duration:
+    while t.value < duration:
         solver.step()
-        print(t, i_inductor.value)
+        print(t.value, i_inductor.value)
         points.append(i_inductor.value)
-        t += DT
+        t.value += DT
+
+    plt.plot(points)
+    plt.show()
+
+
+def resonance():
+    import math
+
+    DT = 0.0001
+    VOLTAGE = 5
+    C = 31.7 * 1e-6
+    L = 500 * 1e-3
+    R = 250
+
+    t = Var(None)
+
+    c = Circuit()
+    v1 = c.new_var()
+    v2 = c.new_var()
+    i_vss = c.new_var()
+    i_l = c.new_var()
+
+    resonance_freq = 1 / (2 * math.pi * math.sqrt(L * C))
+
+    c.new_component(VoltageSource(VOLTAGE, c.gnd, v1, i_vss, t, resonance_freq))
+    c.new_component(Resistor(R, v1, v2))
+    c.new_component(Capacitor(C, DT, v2, c.gnd))
+    c.new_component(Inductor(L, DT, v2, c.gnd, i_l))
+
+    solver = c.solver()
+
+    duration = 2  # Seconds
+
+    points = []
+
+    while t.value < duration:
+        solver.step()
+        print(t.value, v2.value)
+        points.append(v2.value)
+        t.value += DT
 
     plt.plot(points)
     plt.show()
