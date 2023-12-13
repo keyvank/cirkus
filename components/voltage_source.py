@@ -3,13 +3,12 @@ import math
 
 
 class VoltageSource(Component):
-    def __init__(self, volts, a: Var, b: Var, i: Var, t: Var, f=0):
+    def __init__(self, volts, a: Var, b: Var, i: Var, f=0):
         super().__init__()
         self.volts = volts
         self.a = a
         self.b = b
         self.i = i
-        self.t = t
         self.f = f
 
     def apply(self, solver: Solver):
@@ -19,7 +18,7 @@ class VoltageSource(Component):
             self.i.index,
             lambda: self.b.value
             - self.a.value
-            - math.cos(2 * math.pi * self.f * self.t.value) * self.volts,
+            - math.cos(2 * math.pi * self.f * solver.t) * self.volts,
         )
 
         solver.add_deriv(self.a.index, self.i.index, lambda: 1)

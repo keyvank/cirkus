@@ -13,8 +13,6 @@ def astable_multivib():
     R_BASE = 47000
     CAP = 0.000010
 
-    t = Var(None)
-
     c = Circuit()
     top = c.new_var()
     o1 = c.new_var()
@@ -23,27 +21,26 @@ def astable_multivib():
     b2 = c.new_var()
     i = c.new_var()
 
-    c.new_component(VoltageSource(VOLTAGE, c.gnd, top, i, t, 0))
+    c.new_component(VoltageSource(VOLTAGE, c.gnd, top, i, 0))
     c.new_component(Resistor(R_COLLECTOR, top, o1))
     c.new_component(Resistor(R_COLLECTOR, top, o2))
     c.new_component(Resistor(R_BASE, top, b1))
     c.new_component(Resistor(R_BASE, top, b2))
-    c.new_component(Capacitor(CAP, DT, o1, b2))
-    c.new_component(Capacitor(CAP, DT, o2, b1))
+    c.new_component(Capacitor(CAP, o1, b2))
+    c.new_component(Capacitor(CAP, o2, b1))
     c.new_component(Bjt(1 / 0.026, 1e-14, 10, 250, b1, o1, c.gnd))
     c.new_component(Bjt(1 / 0.026, 1e-14, 10, 250, b2, o2, c.gnd))
 
-    solver = c.solver()
+    solver = c.solver(DT)
 
     duration = 3  # Seconds
 
     points = []
 
-    while t.value < duration:
+    while solver.t < duration:
         solver.step()
-        print(t.value, o1.value)
+        print(solver.t, o1.value)
         points.append(o1.value)
-        t.value += DT
 
     plt.plot(points)
     plt.show()
@@ -56,30 +53,27 @@ def rlc():
     L = 1
     CAP = 0.1
 
-    t = Var(None)
-
     c = Circuit()
     v1 = c.new_var()
     v2 = c.new_var()
     i_inductor = c.new_var()
 
-    c.new_component(Capacitor(CAP, DT, c.gnd, v1))
+    c.new_component(Capacitor(CAP, c.gnd, v1))
     c.new_component(Resistor(R, v1, v2))
-    c.new_component(Inductor(L, DT, v2, c.gnd, i_inductor))
+    c.new_component(Inductor(L, v2, c.gnd, i_inductor))
 
     v1.old_value = VOLTAGE
 
-    solver = c.solver()
+    solver = c.solver(DT)
 
     duration = 10  # Seconds
 
     points = []
 
-    while t.value < duration:
+    while solver.t < duration:
         solver.step()
-        print(t.value, i_inductor.value)
+        print(solver.t, i_inductor.value)
         points.append(i_inductor.value)
-        t.value += DT
 
     plt.plot(points)
     plt.show()
@@ -94,8 +88,6 @@ def resonance():
     L = 500 * 1e-3
     R = 250
 
-    t = Var(None)
-
     c = Circuit()
     v1 = c.new_var()
     v2 = c.new_var()
@@ -104,25 +96,24 @@ def resonance():
 
     resonance_freq = 1 / (2 * math.pi * math.sqrt(L * C))
 
-    c.new_component(VoltageSource(VOLTAGE, c.gnd, v1, i_vss, t, resonance_freq))
+    c.new_component(VoltageSource(VOLTAGE, c.gnd, v1, i_vss, resonance_freq))
     c.new_component(Resistor(R, v1, v2))
-    c.new_component(Capacitor(C, DT, v2, c.gnd))
-    c.new_component(Inductor(L, DT, v2, c.gnd, i_l))
+    c.new_component(Capacitor(C, v2, c.gnd))
+    c.new_component(Inductor(L, v2, c.gnd, i_l))
 
-    solver = c.solver()
+    solver = c.solver(DT)
 
     duration = 2  # Seconds
 
     points = []
 
-    while t.value < duration:
+    while solver.t < duration:
         solver.step()
-        print(t.value, v2.value)
+        print(solver.t, v2.value)
         points.append(v2.value)
-        t.value += DT
 
     plt.plot(points)
     plt.show()
 
 
-rlc()
+resonance()

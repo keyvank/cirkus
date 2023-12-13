@@ -14,10 +14,12 @@ class Var:
 
 
 class Solver:
-    def __init__(self, variables) -> None:
+    def __init__(self, variables, dt) -> None:
         self.variables = variables
         self.funcs = [list() for _ in range(len(variables))]
         self.derivs = [dict() for _ in range(len(variables))]
+        self.dt = dt
+        self.t = 0
 
     def jacobian(self):
         res = []
@@ -94,6 +96,7 @@ class Solver:
             if solved:
                 for v in self.variables:
                     v.old_value = v.value
+                self.t += self.dt
                 return
         raise ConvergenceError
 
@@ -120,8 +123,8 @@ class Circuit:
     def new_component(self, comp: Component):
         self.components.append(comp)
 
-    def solver(self) -> Solver:
-        solver = Solver(self.vars)
+    def solver(self, dt) -> Solver:
+        solver = Solver(self.vars, dt)
         for comp in self.components:
             comp.apply(solver)
         return solver
