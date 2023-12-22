@@ -3,7 +3,7 @@ import random
 from matplotlib import pyplot as plt
 
 from circuit import Circuit, Var, Solver
-from components import Resistor, Bjt, VoltageSource, Capacitor, Inductor, Antenna
+from components import Resistor, Bjt, VoltageSource, Capacitor, Inductor, Antenna, Diode
 
 
 def astable_multivib():
@@ -20,7 +20,6 @@ def astable_multivib():
     b1 = c.new_var()
     b2 = c.new_var()
     i = c.new_var()
-    dst_o1 = c.new_var()
 
     c.new_component(VoltageSource(VOLTAGE, c.gnd, top, i, 0))
     c.new_component(Resistor(R_COLLECTOR, top, o1))
@@ -31,7 +30,6 @@ def astable_multivib():
     c.new_component(Capacitor(CAP, o2, b1))
     c.new_component(Bjt(1 / 0.026, 1e-14, 10, 250, b1, o1, c.gnd))
     c.new_component(Bjt(1 / 0.026, 1e-14, 10, 250, b2, o2, c.gnd))
-    c.new_component(Antenna(o1, dst_o1, c.gnd, 0.01, 0.01))
 
     solver = c.solver(DT)
 
@@ -41,8 +39,8 @@ def astable_multivib():
 
     while solver.t < duration:
         solver.step()
-        print(solver.t, dst_o1.value)
-        points.append(dst_o1.value)
+        print(solver.t, o1.value)
+        points.append(o1.value)
 
     plt.plot(points)
     plt.show()
@@ -118,4 +116,65 @@ def resonance():
     plt.show()
 
 
-astable_multivib()
+def antenna():
+    DT = 0.001
+    VOLTAGE = 5
+    R = 0.0001
+    L = 0.1
+    CAP = 0.1
+    AM_CAP = 0.0001
+
+    c = Circuit()
+    v1 = c.new_var()
+    v2 = c.new_var()
+    i_inductor = c.new_var()
+
+    i_vol = c.new_var()
+    v2_2 = c.new_var()
+    i_inductor_2 = c.new_var()
+    v3 = c.new_var()
+    v4 = c.new_var()
+    v5 = c.new_var()
+
+    c.new_component(Capacitor(CAP, c.gnd, v1))
+    c.new_component(Resistor(R, v1, v2))
+    c.new_component(Inductor(L, v2, c.gnd, i_inductor))
+
+    c.new_component(VoltageSource(5, c.gnd, v4, i_vol, 0))
+    c.new_component(Capacitor(CAP, v2_2, c.gnd))
+    c.new_component(Inductor(L, v2_2, c.gnd, i_inductor_2))
+    c.new_component(Diode(1 / 0.026, 1e-14, v2_2, v3))
+    c.new_component(Capacitor(AM_CAP, v3, c.gnd))
+    c.new_component(Bjt(1 / 0.026, 1e-14, 10, 250, v3, v4, v5))
+    c.new_component(Resistor(100, v5, c.gnd))
+
+    c.new_component(Antenna(v1, v2_2, c.gnd, 1, 0))
+
+    solver = c.solver(DT)
+
+    duration = 10  # Seconds
+
+    points = []
+
+    flag_on = False
+    flag_off = False
+
+    while solver.t < duration:
+        if solver.t > 4 and not flag_on:
+            v1.old_value = VOLTAGE
+            flag_on = True
+
+        if solver.t > 6 and not flag_off:
+            v1.old_value = 0
+            i_inductor.old_value = 0
+            flag_off = True
+
+        solver.step()
+        print(solver.t, i_vol.value)
+        points.append(i_vol.value)
+
+    plt.plot(points)
+    plt.show()
+
+
+antenna()
