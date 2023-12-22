@@ -20,6 +20,7 @@ class Solver:
         self.derivs = [dict() for _ in range(len(variables))]
         self.dt = dt
         self.t = 0
+        self.randomness = random.random() - 0.5
 
     def jacobian(self):
         res = []
@@ -97,6 +98,7 @@ class Solver:
                 for v in self.variables:
                     v.old_value = v.value
                 self.t += self.dt
+                self.randomness = random.random() - 0.5
                 return
         raise ConvergenceError
 
